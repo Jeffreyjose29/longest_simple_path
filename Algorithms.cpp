@@ -2,15 +2,20 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <env.h>
 #include <cmath>
+#include <random>
+#include <utility>
+// #include <env.h>
+
+// Sorry :(
+using namespace std;
 
 // Print vector content
-void debugVector(std::vector<int> vec, std::string descr);
+void debugVector(vector<int> vec, string descr);
 // Find all the neighbours for node in Graph
-std::vector<int> findNeighbours(int node, const auto &Graph);
+vector<int> findNeighbours(int node);
 // Finding unused neighbours in path
-std::vector<int> findCandidate(int position, std::vector<int> path, const auto &Graph);
+vector<int> findCandidate(int position, vector<int> path);
 // Function for decreasing temperature, returns new temperature
 double decreaseTemperature(double initialTemperature, double i);
 // Probability of transition, according to Gibbs-Bolcman
@@ -20,10 +25,11 @@ bool isTransition(double probability);
 // In this case "Energy" equal to the  lenght of path
 int calculateEnergy(auto path);
 // Generating new state
+pair< vector<int>, vector< pair<int, int> > > generateStateCandidate(vector<int> path, vector< pair<int, int> >  availableEdges);
 
-	// Init Graph and "random" path
-	// Really random Graphs and paths implement in Python's notebook, check Alghorithms.ipynb
-const std::vector<std::vector<int> > Graph = {
+// Init Graph
+// Really random Graphs and paths implement in Python's notebook, check Alghorithms.ipynb
+const vector<vector<int> > Graph = {
 	{0, 14}, {0, 6}, {1, 9}, {1, 2}, 
 	{1, 13}, {3, 5}, {3, 7}, {4, 10}, 
 	{4, 13}, {4, 7}, {5, 11}, {6, 9}, 
@@ -33,9 +39,10 @@ const std::vector<std::vector<int> > Graph = {
 
 
 int main() {
-	std::vector<int> currentPathRandom = Graph[2];
+	// Theoretically, this path is random
+	vector<int> currentPathRandom = Graph[2];
 
-	// Print random path
+	// Print path
 	debugVector(currentPathRandom, "Random path:");
 
 	// ===========================
@@ -45,8 +52,8 @@ int main() {
 	auto currentPath = currentPathRandom;
 	while (true) { // Insert nodes to the left
 		auto tmpVec = findCandidate(0, currentPath);
-		newNodeFound = tmpVec[0];
-		newNode = tmpVec[1];
+		auto newNodeFound = tmpVec[0];
+		auto newNode = tmpVec[1];
 
 		if (newNodeFound == 1) {
 			currentPath.insert(currentPath.begin(), newNode);
@@ -54,10 +61,11 @@ int main() {
 			break;
 		}
 	}
+
 	while (true) { // Insert nodes to the right
 		auto tmpVec = findCandidate(currentPath.size() - 1, currentPath);
-		newNodeFound = tmpVec[0];
-		newNode = tmpVec[1];
+		auto newNodeFound = tmpVec[0];
+		auto newNode = tmpVec[1];
 
 		if (newNodeFound == 1) {
 			currentPath.push_back(newNode);
@@ -66,7 +74,7 @@ int main() {
 		}
 	}
 
-	debugVector(currentPath);
+	debugVector(currentPath, "Gradient descent longest simple path: ");
 
 	// ===================================
 	// ==== Metropolis with annealing ====
@@ -74,16 +82,16 @@ int main() {
 
 }
 
-void debugVector(std::vector<int> vec, std::string descr) {
-	std::cout << descr << "\n";
+void debugVector(vector<int> vec, string descr) {
+	cout << descr << "\n";
 	for (auto e : vec) {
-		std::cout << e << " ";
+		cout << e << " ";
 	}
-	std::cout << "\n";
+	cout << "\n";
 }
 
-std::vector<int> findNeighbours(int node, const auto &Graph) {
-	std::vector<int> neighbours = {};
+vector<int> findNeighbours(int node) {
+	vector<int> neighbours = {};
 	for (auto edge : Graph) {
 		if (edge[0] == node) {
 			neighbours.push_back(edge[1]);
@@ -95,15 +103,15 @@ std::vector<int> findNeighbours(int node, const auto &Graph) {
 	return neighbours;
 }
 
-std::vector<int> findCandidate(int position, std::vector<int> path, const auto &Graph) {
+vector<int> findCandidate(int position, vector<int> path) {
 	int node = path[position];
-	auto nodeNeighbours = findNeighbours(Graph);
+	auto nodeNeighbours = findNeighbours(node);
 
 	int candidateFound = false;
 	int candidate = 0;
 
 	for (auto node : nodeNeighbours) {
-		if (std::find(path.begin(), path.end(), node) == path.end()) {
+		if (find(path.begin(), path.end(), node) == path.end()) {
 			candidateFound = 1;
 			candidate = node;
 			break;
@@ -135,6 +143,69 @@ int calculateEnergy(auto path) {
 	return path.size() - 1;
 }
 
-std::pair(std::vector<int>, std::vector<std::vector<int> > ) generateStateCandidate(std::vector<int> path, std::vector<std::vector<int> > availableEdges) {
-	
+pair< vector<int>, vector< pair<int, int> > > generateStateCandidate(vector<int> path, vector< pair<int, int> >  availableEdges) {
+	if (path.size() <= 1) { // Fuck this node, let's take any available edge as a new path
+		auto newPath = availableEdges[rand() % (availableEdges.size() - 1)];
+		std::vector<int> path = {newPath.first, newPath.second};
+
+		availableEdges.clear();
+		for (auto edge : Graph) {
+			availableEdges.push_back(make_pair (edge[0], edge[1]));
+			availableEdges.push_back(make_pair (edge[1], edge[0]));
+		}
+		availableEdges.erase(find(availableEdges.begin(), availableEdges.end(), newPath));
+		availableEdges.erase(find(availableEdges.begin(), availableEdges.end(), make_pair (newPath.second, newPath.first)));
+	}
+
+	if (rand() % 3 <= 1) { // If 0 or 1 - than add new node
+		if (availableEdges.size() == 0) { // All edges are used in path
+			return make_pair (path, availableEdges);
+		}
+
+		// Get the vector of shuffled nodes like {0, 7, 14, 3, ...}
+		vector<int> nodeCandidates(15); // In this case we have nodes 0,1,..,14
+		iota(begin(nodeCandidates), end(nodeCandidates), 0);
+
+		if (rand() % 2 == 1) { // Add new edge to the start
+			for (auto node : nodeCandidates) {
+				bool check_1 = find(availableEdges.begin(), availableEdges.end(), make_pair (node, path[0])) == availableEdges.end();
+				bool check_2 = find(availableEdges.begin(), availableEdges.end(), make_pair (path[0], node)) == availableEdges.end();
+				bool check_3 = node != path[path.size() - 1];
+				bool check_4 = find(path.begin(), path.end(), node) == path.end();
+
+				if (check_1 && check_2 && check_3 && check_4) {
+					path.push_back(node); // Add new node to the start
+					availableEdges.erase(find(availableEdges.begin(), availableEdges.end(), make_pair (path[0], path[1])));
+					availableEdges.erase(find(availableEdges.begin(), availableEdges.end(), make_pair (path[1], path[0])));
+					break;
+				}
+			}
+		} else { // Add edge to the end
+			for (auto node : nodeCandidates) {
+				bool check_1 = find(availableEdges.begin(), availableEdges.end(), make_pair (node, path[path.size() - 1])) == availableEdges.end();
+				bool check_2 = find(availableEdges.begin(), availableEdges.end(), make_pair (path[path.size() - 1], node)) == availableEdges.end();
+				bool check_3 = node != path[0];
+				bool check_4 = find(path.begin(), path.end(), node) == path.end();
+
+				if (check_1 && check_2 && check_3 && check_4) {
+					path.push_back(node);
+					availableEdges.erase(find(availableEdges.begin(), availableEdges.end(), make_pair (path[path.size() - 1], path[path.size() - 2])));
+					availableEdges.erase(find(availableEdges.begin(), availableEdges.end(), make_pair (path[path.size() - 2], path[path.size() - 1])));
+					break;
+				}
+			}
+		}
+	} else { // Remove edge
+		if (rand() % 2 == 1) { // Remove start edge
+			availableEdges.push_back(make_pair (path[0], path[1]));
+			availableEdges.push_back(make_pair (path[1], path[0]));
+			path.erase(path.begin());
+		} else { // Remove end edge
+			availableEdges.push_back(make_pair (path[path.size() - 1], path[path.size() - 2]));
+			availableEdges.push_back(make_pair (path[path.size() - 2], path[path.size() - 1]));
+			path.pop_back();
+		}
+	}
+
+	return make_pair (path, availableEdges);
 };
