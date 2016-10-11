@@ -13,8 +13,18 @@
 - [table_result.csv](https://github.com/pavlovdog/longest_simple_path/blob/master/table_result.csv) - сравнение результатов работы различных алгоритмах на различных графах (изменялось число вершин и вероятность ребер)
 
 ## Отчет
-Вот пример работы алгоритмов для случайного графа на 19 вершинах с вероятностью появления ребра 0.2/
-Случайный путь:
-![radom](https://github.com/pavlovdog/longest_simple_path/raw/master/graph_pictures/1476217730.17_RANDOM_PATH.png "Random path")
+Вот пример работы алгоритмов для случайного графа на 19 вершинах с вероятностью появления ребра 0.2
+
+### Случайный путь
+![random](https://github.com/pavlovdog/longest_simple_path/raw/master/graph_pictures/1476217730.17_RANDOM_PATH.png "Random path")
+
+### Путь, найденный градиентным спуском
+![grad](https://github.com/pavlovdog/longest_simple_path/blob/master/graph_pictures/1476217730.17_GRADIENT_DESCENT.png "Grad path")
+
+### Путь, найденный алгоритмом Метрополиса с отжигом
+![metroanneal](https://github.com/pavlovdog/longest_simple_path/blob/master/graph_pictures/1476217730.17_METROPOLIS_WITH_ANNEALING.png "Metroanneal path")
+
+### Путь, найденный алгоритмом Метрополиса без Отжига
+![metro](https://github.com/pavlovdog/longest_simple_path/blob/master/graph_pictures/1476217730.17_METROPOLIS_WITHOUT_ANNEALING.png "Metro path")
 
 По таблице, представленно
