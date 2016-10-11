@@ -23,7 +23,7 @@ double getTransitionProbability(double dE, double T);
 // Make transition or not
 bool isTransition(double probability);
 // In this case "Energy" equal to the  lenght of path
-int calculateEnergy(auto path);
+int calculateEnergy(vector<int> path);
 // Generating new state
 pair< vector<int>, vector< pair<int, int> > > generateStateCandidate(vector<int> path, vector< pair<int, int> >  availableEdges);
 
@@ -36,6 +36,8 @@ const vector<vector<int> > Graph = {
 	{6, 14}, {7, 13}, {8, 9}, {8, 12}, 
 	{9, 12}, {12, 14}
 };
+
+const 
 
 
 int main() {
@@ -79,7 +81,61 @@ int main() {
 	// ===================================
 	// ==== Metropolis with annealing ====
 	// ===================================
+	currentPath = currentPathRandom;
+	auto currentEnergy = calculateEnergy(currentPath);
+	double initialTemperature = 100000;
+	double endTemperature = 1;
+	double T = initialTemperature;
 
+	vector<pair<int, int> > currentPathPairs;
+	for (size_t i = 0; i != currentPath.size() - 2; i++) {
+		currentPathPairs.push_back(make_pair (currentPath[i], currentPath[i+1]);
+	}
+
+	// Make vector of ununsed edges
+	vector<pair<int, int> > availableEdges;
+	for (auto edge : Graph) {
+		bool check_1 = find(currentPathPairs.begin(), currentPathPairs.end(), make_pair (edge[0], edge[1])) == currentPathPairs.end();
+		bool check_2 = find(currentPathPairs.begin(), currentPathPairs.end(), make_pair (edge[1], edge[0])) == currentPathPairs.end();
+		if (check_1 && check_2) {
+			availableEdges.push_back(make_pair (edge[0], edge[1]));
+			availableEdges.push_back(make_pair (edge[1], edge[0]));
+		}
+	}
+
+	for (int step = 0; step != 10000; step++) { // 10000 iterations is enough, believe me
+		auto newState = generateStateCandidate(currentPath, availableEdges);
+		auto stateCandidate = newState.first;
+		auto newAvailableEdges = newState.second;
+		auto candidateEnergy = calculateEnergy(stateCandidate);
+
+		if (candidateEnergy >= currentEnergy) {
+			currentPath = stateCandidate;
+			currentEnergy = candidateEnergy;
+			availableEdges = newAvailableEdges;
+		} else {
+			auto p = getTransitionProbability(currentEnergy - candidateEnergy, T);
+			if (isTransition(p)) {
+	            currentPath = stateCandidate;
+	            currentEnergy = candidateEnergy;
+	            availableEdges = newAvailableEdges;
+			}
+		}
+		T = decreaseTemperature(initialTemperature, step);
+		if (T <= endTemperature) {
+			break;
+		}
+	}
+	debugVector(currentPath, "Metropolis with annealing longest simple path:");
+
+	// ======================================
+	// ==== Metropolis without annealing ====
+	// ======================================
+	// The same as Metropolis with annealing
+	// Just comment line #114 - 'T = decreaseTemperature(...)'
+	// And set up initialTemperature = 100
+
+	return 0;
 }
 
 void debugVector(vector<int> vec, string descr) {
